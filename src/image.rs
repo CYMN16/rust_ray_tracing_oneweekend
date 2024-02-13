@@ -109,6 +109,10 @@ impl Color {
         let scale = 1. / samples_per_pixel as f64;
         let scaled = scale * self;
 
+        fn linear_to_gamma(linear_component: f64) -> f64 {
+            linear_component.sqrt()
+        }
+        let scaled = scaled.map(linear_to_gamma);
         Pixel {
             r: (256. * intensity.clamp(scaled.x)) as u8,
             g: (256. * intensity.clamp(scaled.y)) as u8,

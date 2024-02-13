@@ -1,4 +1,8 @@
+use rand::{thread_rng, Rng};
 use std::{fmt::*, iter::Sum, ops::*};
+
+use crate::utility::*;
+
 #[derive(Clone)]
 pub struct Vec3 {
     pub x: f64,
@@ -23,12 +27,25 @@ impl Vec3 {
         Self { x, y, z }
     }
 
+    pub fn map(&self, func: impl Fn(f64) -> f64) -> Self {
+        Vec3 {
+            x: func(self.x),
+            y: func(self.y),
+            z: func(self.z),
+        }
+    }
+
     pub fn length(&self) -> f64 {
         self.length_squared().sqrt()
     }
 
     pub fn length_squared(&self) -> f64 {
         self.x * self.x + self.y * self.y + self.z * self.z
+    }
+
+    pub fn near_zero(&self) -> bool {
+        let s = 1e-8;
+        return (self.x.abs() < s) && (self.y.abs() < s) && (self.z.abs() < s);
     }
 
     pub fn dot(&self, rhs: &Vec3) -> f64 {
@@ -45,6 +62,53 @@ impl Vec3 {
 
     pub fn unit(&self) -> Self {
         self.clone() / self.length()
+    }
+
+    pub fn random_in_unit_sphere() -> Self {
+        loop {
+            let p = Self::random_in_range(-1., 1.);
+            if p.length_squared() < 1. {
+                return p;
+            }
+        }
+    }
+    pub fn random_unit_vector() -> Self {
+        Self::unit(&Self::random_in_unit_sphere())
+    }
+
+    pub fn random_in_hemisphere(normal: Vec3) -> Self {
+        let on_unit_sphere = Self::random_unit_vector();
+        if on_unit_sphere.dot(&normal) > 0. {
+            return on_unit_sphere;
+        }
+        -on_unit_sphere
+    }
+
+    pub fn reflect(v: &Vec3, n: &Vec3) -> Self {
+        return v - 2. * v.dot(n) * n;
+    }
+
+    pub fn refract(uv: &Vec3, n: &Vec3, etai_over_etat: f64) -> Self {
+        let cos_theta = ((-uv).dot(n)).min(1.);
+        let r_out_perp = etai_over_etat * (uv + cos_theta * n);
+        let r_out_parallel = -(1. - r_out_perp.length_squared()).abs().sqrt() * n;
+        return r_out_perp + r_out_parallel;
+    }
+
+    pub fn random() -> Self {
+        Self {
+            x: random_f64(),
+            y: random_f64(),
+            z: random_f64(),
+        }
+    }
+
+    pub fn random_in_range(min: f64, max: f64) -> Self {
+        Self {
+            x: random_f64_in_range(min, max),
+            y: random_f64_in_range(min, max),
+            z: random_f64_in_range(min, max),
+        }
     }
 }
 
@@ -156,6 +220,13 @@ impl Mul<Vec3> for i64 {
     }
 }
 
+impl Mul<Vec3> for Vec3 {
+    type Output = Vec3;
+
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        Self::new(self.x * rhs.x, self.y * rhs.y, self.z * rhs.z)
+    }
+}
 //div
 
 impl Div<f64> for &Vec3 {

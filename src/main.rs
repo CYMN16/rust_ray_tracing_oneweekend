@@ -2,30 +2,33 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
 pub mod camera;
+pub mod display;
 pub mod hittable;
 pub mod hittable_list;
 pub mod image;
 pub mod interval;
+pub mod material;
 pub mod ray;
 pub mod sphere;
 pub mod utility;
 pub mod vec3;
 
 use camera::*;
+use display::*;
 use hittable::*;
 use hittable_list::*;
 use image::*;
 use interval::*;
+use material::*;
 use ray::*;
 use sphere::*;
 use utility::*;
 use vec3::*;
-use rand;
 
 use std::{
     fs::File,
     io::{BufWriter, Write},
-    rc::*,
+    sync::Arc,
     time::Instant,
 };
 
@@ -38,15 +41,43 @@ fn main() -> std::io::Result<()> {
     cam.aspect_ratio = 16. / 9.;
     cam.image_width = 400;
     cam.samples_per_pixel = 100;
+    cam.max_depth = 50;
 
     let mut world: HittableList = HittableList { objects: vec![] };
 
-    world.add(Rc::new(Sphere::new(Point3::new(0., 0., -1.), 0.5)));
-    world.add(Rc::new(Sphere::new(Point3::new(0., -100.5, -1.), 100.)));
+    let material_ground = Arc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
+    let material_center = Arc::new(Dielectric::new(1.5));
+    let material_left = Arc::new(Dielectric::new(1.5));
+    let material_right = Arc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 1.0));
+
+    world.add(Arc::new(Sphere::new(
+        Point3::new(0., -100.5, -1.),
+        100.,
+        material_ground,
+    )));
+    world.add(Arc::new(Sphere::new(
+        Point3::new(-1., 0., -1.),
+        0.5,
+        material_left,
+    )));
+    world.add(Arc::new(Sphere::new(
+        Point3::new(0., 0., -1.),
+        0.5,
+        material_center,
+    )));
+    world.add(Arc::new(Sphere::new(
+        Point3::new(1., 0., -1.),
+        0.5,
+        material_right,
+    )));
+
+    // display
 
     let time_start = Instant::now();
 
     let img = cam.parallel_render(&world);
+
+    // display_image(&mut cam, &world);
 
     let time_end = Instant::now();
 
@@ -170,6 +201,10 @@ mod test_vec {
         let v2 = Vec3::new(4., 7., 3.);
         k9::snapshot!(v1.dot(&v2), "40.0");
         k9::snapshot!(v1.cross(&v2), "(2, -8, 16)");
+
+        let v4 = Vec3::new(1., 1., 0.);
+        let v5 = Vec3::new(0., 1., 0.);
+        k9::snapshot!(Vec3::refract(&v4, &v5, 1.5), "(1.5, -1.118033988749895, 0)");
     }
 }
 

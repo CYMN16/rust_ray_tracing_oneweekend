@@ -1,22 +1,23 @@
 use crate::hittable::*;
 use crate::interval::*;
+use crate::material::*;
 use crate::ray::*;
 use crate::vec3::*;
-use std::rc::*;
+use crate::Color;
+use std::sync::Arc;
 
 pub struct HittableList {
-    pub objects: Vec<Rc<dyn Hittable>>,
+    pub objects: Vec<Arc<dyn Hittable>>,
 }
 
-unsafe impl Sync for HittableList{
-
-}
+unsafe impl Sync for HittableList {}
 
 impl Hittable for HittableList {
     fn hit(&self, r: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool {
         let temp_rec: &mut HitRecord = &mut HitRecord {
-            p: Vec3::new(0., 0., 0.),
-            normal: Vec3::new(0., 0., 0.),
+            p: Vec3::default(),
+            normal: Vec3::default(),
+            mat: Arc::new(Lambertian::new(Color::new(0., 0., 0.))),
             t: 0.,
             front_face: false,
         };
@@ -42,13 +43,13 @@ impl Hittable for HittableList {
 impl HittableList {
     pub fn new(&self) {}
 
-    pub fn new_with_init(&self, object: Rc<dyn Hittable>) {}
+    pub fn new_with_init(&self, object: Arc<dyn Hittable>) {}
 
     pub fn clear(&mut self) {
         self.objects.clear();
     }
 
-    pub fn add(&mut self, object: Rc<dyn Hittable>) {
+    pub fn add(&mut self, object: Arc<dyn Hittable>) {
         self.objects.push(object);
     }
 }

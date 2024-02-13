@@ -6,6 +6,7 @@ use crate::ray::*;
 use crate::sphere::*;
 use crate::utility::*;
 use crate::vec3::*;
+use crate::Lambertian;
 use rand::thread_rng;
 use rand::Rng;
 use rayon::prelude::*;
@@ -18,6 +19,7 @@ pub struct Camera {
     pub aspect_ratio: f64,
     pub image_width: usize,
     pub samples_per_pixel: usize,
+    pub max_depth: usize,
     image_height: usize,
     center: Point3,
     pixel00_loc: Point3,
@@ -31,6 +33,7 @@ impl Default for Camera {
             aspect_ratio: 1.0,
             image_width: 100,
             samples_per_pixel: 10,
+            max_depth: 10,
             image_height: Default::default(),
             center: Default::default(),
             pixel00_loc: Default::default(),
@@ -41,11 +44,17 @@ impl Default for Camera {
 }
 
 impl Camera {
-    pub fn new(aspect_ratio: f64, image_width: usize, samples_per_pixel: usize) -> Self {
+    pub fn new(
+        aspect_ratio: f64,
+        image_width: usize,
+        samples_per_pixel: usize,
+        max_depth: usize,
+    ) -> Self {
         Self {
             aspect_ratio,
             image_width,
             samples_per_pixel,
+            max_depth,
             image_height: Default::default(),
             center: Default::default(),
             pixel00_loc: Default::default(),
@@ -57,12 +66,6 @@ impl Camera {
     pub fn initialize(&mut self) {
         //image
         self.image_height = (self.image_width as f64 / self.aspect_ratio) as usize;
-
-        // //world
-        // let mut world: HittableList = HittableList{ objects: vec![] };
-
-        // world.add(Rc::new(Sphere::new(Point3::new(0.,0.,-1.), 0.5)));
-        // world.add(Rc::new(Sphere::new(Point3::new(0.,-100.5,-1.), 100.)));
 
         let focal_length = 1.;
         let viewport_height = 2.;
@@ -82,16 +85,28 @@ impl Camera {
             viewport_upper_left + 0.5 * (&self.pixel_delta_lr + &self.pixel_delta_ud);
     }
 
-    pub fn ray_color(r: &Ray, world: &dyn Hittable) -> Color {
+    pub fn ray_color(r: &Ray, depth: usize, world: &dyn Hittable) -> Color {
         let rec: &mut HitRecord = &mut HitRecord {
-            p: Vec3::new(0., 0., 0.),
-            normal: Vec3::new(0., 0., 0.),
+            p: Vec3::default(),
+            normal: Vec3::default(),
+            mat: Arc::new(Lambertian::new(Color::default())),
             t: 0.,
             front_face: false,
         };
 
-        if world.hit(r, Interval::new_with_init(0., INFINITY), rec) {
-            return 0.5 * (rec.normal.clone() + Color::new(0.5, 0.7, 1.0));
+        if depth <= 0 {
+            return Color::new(0., 0., 0.);
+        }
+
+        if world.hit(r, Interval::new_with_init(0.001, INFINITY), rec) {
+            let mut scattered = Ray::default();
+            let mut attenuation = Color::default();
+
+            if rec.mat.scatter(r, rec, &mut attenuation, &mut scattered) {
+                return attenuation * Self::ray_color(&scattered, depth - 1, world);
+            }
+
+            return Color::default();
         }
 
         let unit_direction = r.direction.unit();
@@ -110,7 +125,7 @@ impl Camera {
                 let mut pixel_color = Color::new(0., 0., 0.);
                 for sample in 0..self.samples_per_pixel {
                     let r = self.get_ray(col, row);
-                    pixel_color = pixel_color + Self::ray_color(&r, world);
+                    pixel_color = pixel_color + Self::ray_color(&r, self.max_depth, world);
                 }
 
                 image.pixels[row][col] = pixel_color.to_pixel_with_spp(self.samples_per_pixel);
@@ -131,62 +146,21 @@ impl Camera {
             .for_each(|(x, row)| {
                 row.par_iter_mut().enumerate().for_each(|(y, pixel)| {
                     // *pixel = Pixel { r: 0, g: 0, b: 0 };
-                        let pixel_color = (0..self.samples_per_pixel)
-                            .into_par_iter()
-                            .map(|_sample| {
-                                // set_device(0);
-                                let r = self.t_get_ray(y, x);
+                    let pixel_color = (0..self.samples_per_pixel)
+                        .into_par_iter()
+                        .map(|_sample| {
+                            // set_device(0);
+                            let r = self.get_ray(y, x);
 
-                                Self::ray_color(&r, world)
-                            })
-                            .sum::<Color>();
-                        *pixel = pixel_color.to_pixel_with_spp(self.samples_per_pixel)
+                            Self::ray_color(&r, self.max_depth, world)
+                        })
+                        .sum::<Color>();
+                    *pixel = pixel_color.to_pixel_with_spp(self.samples_per_pixel)
                 });
             });
-
-        // let row: Vec<Vec<Pixel>> = image.pixels
-        //     .par_iter()
-        //     .enumerate()
-        //     .for_each(|(x, row)| -> Vec<Pixel> {
-        //         let col = row
-        //             .par_iter()
-        //             .enumerate()
-        //             .for_each(|(y, mut pixel)| -> Pixel {
-        //                 let pixel_color = (0..self.samples_per_pixel)
-        //                     .into_par_iter()
-        //                     .map(|_sample| {
-        //                         let r = self.t_get_ray(y, x);
-
-        //                         Self::ray_color(&r, world)
-        //                     })
-        //                     .sum::<Color>();
-        //                 pixel_color.to_pixel_with_spp(self.samples_per_pixel)
-        //             }).collect()
-        //     }).collect();
-
         processed_image
     }
-    fn t_get_ray(&self, i: usize, j: usize) -> Ray {
-        let pixel_center = &self.pixel00_loc
-            + (i as f64 * &self.pixel_delta_lr)
-            + (j as f64 * &self.pixel_delta_ud);
 
-        let pixel_sample = &pixel_center + self.t_pixel_sample_square();
-        let ray_origin = self.center.clone();
-
-        let ray_direction = &pixel_sample - &ray_origin;
-
-        let ray = Ray::new(ray_origin, ray_direction);
-
-        ray
-    }
-
-    fn t_pixel_sample_square(&self) -> Vec3 {
-        let mut rng = thread_rng();
-        let px = -0.5 + rng.gen::<f64>();
-        let py = -0.5 + rng.gen::<f64>();
-        return (px * &self.pixel_delta_lr) + (py * &self.pixel_delta_ud);
-    }
     fn get_ray(&self, i: usize, j: usize) -> Ray {
         let pixel_center = &self.pixel00_loc
             + (i as f64 * &self.pixel_delta_lr)

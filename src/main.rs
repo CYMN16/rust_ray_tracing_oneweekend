@@ -46,7 +46,7 @@ fn main() -> std::io::Result<()> {
     let mut world: HittableList = HittableList { objects: vec![] };
 
     let material_ground = Arc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
-    let material_center = Arc::new(Dielectric::new(1.5));
+    let material_center = Arc::new(Lambertian::new(Color::new(0.1, 0.2, 0.5)));
     let material_left = Arc::new(Dielectric::new(1.5));
     let material_right = Arc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 1.0));
 
@@ -58,6 +58,11 @@ fn main() -> std::io::Result<()> {
     world.add(Arc::new(Sphere::new(
         Point3::new(-1., 0., -1.),
         0.5,
+        material_left.clone(),
+    )));
+    world.add(Arc::new(Sphere::new(
+        Point3::new(-1., 0., -1.),
+        -0.4,
         material_left,
     )));
     world.add(Arc::new(Sphere::new(
@@ -97,9 +102,30 @@ mod test_random {
 
     #[test]
     fn test_hit() {
-        // let h1 = Hittable::new();
-        // let r1 = rand::random::<f64>();
-        // k9::snapshot!(r1, "0.5618833664477753");
+        let mut cam = Camera::default(); //= Camera::new(16./9., 400);
+        cam.aspect_ratio = 16. / 9.;
+        cam.image_width = 400;
+        cam.samples_per_pixel = 100;
+        cam.max_depth = 50;
+
+        let material_center = Arc::new(Dielectric::new(1.5));
+        let ray = Ray::new(Vec3::new(0., 0., 0.), Vec3::new(0.2, 0.2, 0.2));
+        let rec: &mut HitRecord = &mut HitRecord {
+            p: Vec3::default(),
+            normal: Vec3::default(),
+            mat: Arc::new(Lambertian::new(Color::default())),
+            t: 0.,
+            front_face: false,
+        };
+        let mut attenuation = Color::default();
+        let mut scattered = Ray::new(Vec3::new(0., 0., 0.), Vec3::new(0., 0., 0.));
+        material_center.scatter(&ray, &rec, &mut attenuation, &mut scattered);
+        // let res = cam.parallel_render(world);
+        k9::snapshot!(attenuation, "(1, 1, 1)");
+        k9::snapshot!(
+            scattered,
+            "Origin: (0, 0, 0), Direction (0.5773502691896257, 0.5773502691896257, 0.5773502691896257)"
+        );
     }
 }
 #[cfg(test)]

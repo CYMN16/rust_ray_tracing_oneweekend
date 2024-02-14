@@ -1,5 +1,5 @@
-use crate::{hittable::*, Color, Ray, Vec3};
-
+#![allow(unused_assignments)]
+use crate::{hittable::*, random_f64, Color, Ray, Vec3};
 pub trait Material: Sync {
     fn scatter(
         &self,
@@ -101,9 +101,31 @@ impl Material for Dielectric {
         };
 
         let unit_direction = r_in.direction.unit();
+
+        let cos_theta = (-&unit_direction).dot(&rec.normal).min(1.0);
+        let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
+
+        let cannot_refract = refraction_ratio * sin_theta > 1.;
+
+        let mut direction = Vec3::default();
+
+        if cannot_refract || reflectance(cos_theta, refraction_ratio) > random_f64() {
+            direction = Vec3::reflect(&unit_direction, &rec.normal);
+        } else {
+            direction = Vec3::refract(&unit_direction, &rec.normal, refraction_ratio);
+        }
+
         let refracted = Vec3::refract(&unit_direction, &rec.normal, refraction_ratio);
 
-        *scattered = Ray::new(rec.p.clone(), refracted);
-        true
+        *scattered = Ray::new(rec.p.clone(), direction);
+        return true;
     }
+}
+
+fn reflectance(cosine: f64, ref_idx: f64) -> f64{
+    //Shlick approximation for reflectance
+    let mut r0 = (1. - ref_idx) / (1. + ref_idx);
+    r0 = r0*r0;
+    return r0 + (1. - r0) * (1. - cosine).powi(5);
+
 }

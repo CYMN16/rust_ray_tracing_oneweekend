@@ -104,9 +104,9 @@ impl Camera {
 
             if rec.mat.scatter(r, rec, &mut attenuation, &mut scattered) {
                 return attenuation * Self::ray_color(&scattered, depth - 1, world);
+            } else {
+                return Color::default();
             }
-
-            return Color::default();
         }
 
         let unit_direction = r.direction.unit();

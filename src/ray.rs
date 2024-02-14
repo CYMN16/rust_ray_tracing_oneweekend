@@ -1,5 +1,7 @@
 use crate::image::*;
 use crate::vec3::*;
+use std::fmt::*;
+
 pub struct Ray {
     pub origin: Point3,
     pub direction: Vec3,
@@ -11,6 +13,16 @@ impl Default for Ray {
             origin: Default::default(),
             direction: Default::default(),
         }
+    }
+}
+
+impl Debug for Ray {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(
+            f,
+            "Origin: {:?}, Direction {:?}",
+            self.origin, self.direction
+        )
     }
 }
 

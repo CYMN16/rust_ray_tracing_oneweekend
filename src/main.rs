@@ -43,12 +43,32 @@ fn main() -> std::io::Result<()> {
     cam.samples_per_pixel = 100;
     cam.max_depth = 50;
 
+    cam.vfov = 20.;
+    cam.lookfrom = Point3::new(-2., 2., 1.);
+    cam.lookat = Point3::new(0., 0., -1.);
+    cam.vup = Vec3::new(0., 1., 0.);
     let mut world: HittableList = HittableList { objects: vec![] };
+
+    // let r = (PI / 4.).cos();
+
+    // let material_left = Arc::new(Lambertian::new(Color::new(0., 0., 1.)));
+    // let material_right = Arc::new(Lambertian::new(Color::new(1., 0., 0.)));
+
+    // world.add(Arc::new(Sphere::new(
+    //     Point3::new(-r, 0., -1.),
+    //     r,
+    //     material_left,
+    // )));
+    // world.add(Arc::new(Sphere::new(
+    //     Point3::new(r, 0., -1.),
+    //     r,
+    //     material_right,
+    // )));
 
     let material_ground = Arc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
     let material_center = Arc::new(Lambertian::new(Color::new(0.1, 0.2, 0.5)));
     let material_left = Arc::new(Dielectric::new(1.5));
-    let material_right = Arc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 1.0));
+    let material_right = Arc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 0.0));
 
     world.add(Arc::new(Sphere::new(
         Point3::new(0., -100.5, -1.),
@@ -125,6 +145,46 @@ mod test_random {
         k9::snapshot!(
             scattered,
             "Origin: (0, 0, 0), Direction (0.5773502691896257, 0.5773502691896257, 0.5773502691896257)"
+        );
+    }
+
+    #[test]
+    fn test_cam() {
+        let mut cam = Camera::default();
+
+        cam.aspect_ratio = 16. / 9.;
+        cam.image_width = 400;
+        cam.samples_per_pixel = 10;
+        cam.max_depth = 50;
+
+        cam.vfov = 90.;
+        cam.lookfrom = Point3::new(-2., 2., 1.);
+        cam.lookat = Point3::new(0., 0., -1.);
+        cam.vup = Vec3::new(0., 1., 0.);
+
+        // cam.initialize();
+        k9::snapshot!(
+            cam,
+            "
+Camera {
+    aspect_ratio: 1.7777777777777777,
+    image_width: 400,
+    samples_per_pixel: 10,
+    max_depth: 50,
+    vfov: 90.0,
+    lookfrom: (-2, 2, 1),
+    lookat: (0, 0, -1),
+    vup: (0, 1, 0),
+    image_height: 0,
+    center: (0, 0, 0),
+    pixel00_loc: (0, 0, 0),
+    pixel_delta_lr: (0, 0, 0),
+    pixel_delta_ud: (0, 0, 0),
+    u: (0, 0, 0),
+    v: (0, 0, 0),
+    w: (0, 0, 0),
+}
+"
         );
     }
 }

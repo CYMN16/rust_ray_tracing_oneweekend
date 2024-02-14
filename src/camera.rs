@@ -15,16 +15,24 @@ use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+#[derive(Debug)]
 pub struct Camera {
     pub aspect_ratio: f64,
     pub image_width: usize,
     pub samples_per_pixel: usize,
     pub max_depth: usize,
+    pub vfov: f64,
+    pub lookfrom: Point3,
+    pub lookat: Point3,
+    pub vup: Vec3,
     image_height: usize,
     center: Point3,
     pixel00_loc: Point3,
     pixel_delta_lr: Vec3,
     pixel_delta_ud: Vec3,
+    u: Vec3,
+    v: Vec3,
+    w: Vec3,
 }
 
 impl Default for Camera {
@@ -34,52 +42,48 @@ impl Default for Camera {
             image_width: 100,
             samples_per_pixel: 10,
             max_depth: 10,
+            vfov: 90.,
+            lookfrom: Point3::new(0., 0., -1.),
+            lookat: Point3::new(0., 0., 0.),
+            vup: Vec3::new(0., 1., 0.),
             image_height: Default::default(),
             center: Default::default(),
             pixel00_loc: Default::default(),
             pixel_delta_lr: Default::default(),
             pixel_delta_ud: Default::default(),
+            u: Default::default(),
+            v: Default::default(),
+            w: Default::default(),
         }
     }
 }
 
 impl Camera {
-    pub fn new(
-        aspect_ratio: f64,
-        image_width: usize,
-        samples_per_pixel: usize,
-        max_depth: usize,
-    ) -> Self {
-        Self {
-            aspect_ratio,
-            image_width,
-            samples_per_pixel,
-            max_depth,
-            image_height: Default::default(),
-            center: Default::default(),
-            pixel00_loc: Default::default(),
-            pixel_delta_lr: Default::default(),
-            pixel_delta_ud: Default::default(),
-        }
-    }
-
     pub fn initialize(&mut self) {
         //image
         self.image_height = (self.image_width as f64 / self.aspect_ratio) as usize;
+        self.center = self.lookfrom.clone();
 
-        let focal_length = 1.;
-        let viewport_height = 2.;
-        let viewport_width = viewport_height * self.aspect_ratio;
-        self.center = Point3::new(0., 0., 0.);
+        let focal_length = (&self.lookfrom - &self.lookat).length();
 
-        let viewport_lr = Vec3::new(viewport_width, 0., 0.);
-        let viewport_ud = Vec3::new(0., -viewport_height, 0.);
+        let theta = deg_to_rad(self.vfov);
+        let h = (theta / 2.).tan();
+        let viewport_height = 2. * h * focal_length;
+
+        let viewport_width = viewport_height * self.image_width as f64 / self.image_height as f64; //self.aspect_ratio;
+
+        self.w = (&self.lookfrom - &self.lookat).unit();
+        self.u = self.vup.cross(&self.w).unit();
+        self.v = self.w.cross(&self.u);
+
+        let viewport_lr = viewport_width * &self.u;
+        let viewport_ud = viewport_height * -&self.v;
 
         self.pixel_delta_lr = &viewport_lr / self.image_width as f64;
         self.pixel_delta_ud = &viewport_ud / self.image_height as f64;
 
         let viewport_upper_left =
-            &self.center - Vec3::new(0., 0., focal_length) - &viewport_lr / 2. - &viewport_ud / 2.;
+            &self.center - (focal_length * &self.w) - viewport_lr / 2. - viewport_ud / 2.; //Vec3::new(0., 0., focal_length) - &viewport_lr / 2. - &viewport_ud / 2.;
 
         self.pixel00_loc =
             viewport_upper_left + 0.5 * (&self.pixel_delta_lr + &self.pixel_delta_ud);

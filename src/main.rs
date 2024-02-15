@@ -34,7 +34,7 @@ use std::{
 
 fn main() -> std::io::Result<()> {
     // set_device(0);
-    let mut buffer = BufWriter::new(File::create("sample.ppm")?);
+    // let mut buffer = BufWriter::new(File::create("sample.ppm")?);
 
     // let img = simple_scene();
     let mut cam = Camera::default(); //= Camera::new(16./9., 400);
@@ -97,21 +97,23 @@ fn main() -> std::io::Result<()> {
     )));
 
     // display
+    // let time_start = Instant::now();
+    
+    display_image(&mut cam, &world);
 
-    let time_start = Instant::now();
-
-    let img = cam.parallel_render(&world);
+    // let img = cam.parallel_render(&world);
 
     // display_image(&mut cam, &world);
 
-    let time_end = Instant::now();
+    // let time_end = Instant::now();
 
-    write!(buffer, "{}", PPM(&img))?;
-    buffer.flush()?;
-    println!("Successfully generated PPM image!");
-    println!("Time start: {:?}", time_start);
-    println!("Time end: {:?}", time_end);
-    println!("Time elapsed: {:?}", time_end - time_start);
+
+    // write!(buffer, "{}", PPM(&img))?;
+    // buffer.flush()?;
+    // println!("Successfully generated PPM image!");
+    // println!("Time start: {:?}", time_start);
+    // println!("Time end: {:?}", time_end);
+    // println!("Time elapsed: {:?}", time_end - time_start);
 
     Ok(())
 }

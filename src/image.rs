@@ -1,8 +1,10 @@
 use crate::{vec3::*, Interval};
 use std::{
     fmt::*,
+    sync::Arc,
     thread::{self, JoinHandle},
 };
+
 #[derive(Default)]
 pub struct Pixel {
     pub r: u8,
@@ -10,8 +12,28 @@ pub struct Pixel {
     pub b: u8,
 }
 
+impl Into<Vec<u8>> for Pixel {
+    fn into(self) -> Vec<u8> {
+        vec![self.r, self.g, self.b]
+    }
+}
+
 pub struct Image {
     pub pixels: Vec<Vec<Pixel>>,
+}
+
+impl Into<Arc<[u8]>> for Image {
+    fn into(self) -> Arc<[u8]> {
+        let bytes: Vec<u8> = self
+            .pixels
+            .into_iter()
+            .flatten()
+            .map(|pixel| -> Vec<u8> {pixel.into()})
+            .flatten()
+            .collect();
+        let bytes_arc: Arc<[u8]> = Arc::from(bytes);
+        bytes_arc
+    }
 }
 
 impl Image {

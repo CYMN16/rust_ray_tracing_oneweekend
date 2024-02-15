@@ -1,40 +1,82 @@
 use crate::camera::*;
 use crate::hittable_list::*;
-use crate::image::*;
-use raylib::ffi::KeyboardKey;
-use raylib::prelude::RaylibDrawHandle;
-use raylib::prelude::*;
+use druid::widget::*;
+use druid::*;
+use druid::Data;
+use im::vector;
+use im::Vector;
+use crate::Image;
 
-// fn draw_circles<'a>(frame: &Vec<Vec<i32>>, d: &mut RaylibDrawHandle) -> i32 {
-//     for c in frame {
-//         d.draw_circle(c[0], c[1], 10f32, raylib::prelude::Color{r:0,g:0,b:0,a:255});
-//     }
+use std::sync::Arc;
+use std::time::Instant;
 
-//     0
-// }
+#[derive(Data, Clone)]
+struct AppState {
+    image_buf: ImageBuf,
+}
 
-const WIDTH: i32 = 1000;
-const HEIGHT: i32 = 800;
+fn render(cam: &mut Camera, world: &HittableList) -> Image {
+    cam.parallel_render(world)
+}
 
-pub fn display_image(cam: &mut crate::camera::Camera, world: &HittableList) {
-    // let frame = vec![vec![100,200],vec![300,200],vec![100,300]];
-    let img = cam.parallel_render(world);
-    let (mut rl, thread) = raylib::init()
-        .size(WIDTH, HEIGHT)
-        .title("RAY TRACING TESTING")
-        .build();
-    // let rl_img = raylib::ffi::Image{ data: img, width: img.width() as i32, height: img.height() as i32, mipmaps: 1, format: PixelFormat::PIXELFORMAT_UNCOMPRESSED_R32G32B32 as i32};
+fn convert_im_to_druidim(img: Image) -> ImageBuf{
+    let width = img.width();
+    let height = img.height();
+    ImageBuf::from_raw(img, piet::ImageFormat::Rgb, width, height)    
+}   
+    
 
-    while !rl.window_should_close() {
-        if rl.is_key_down(KeyboardKey::KEY_Q) {
-            break;
-        }
-        // if rl.is_key_pressed(KeyboardKey::KEY_J) {movement = movement/2f32}
-        // if rl.is_key_pressed(KeyboardKey::KEY_K) {movement = movement*2f32}
+fn build_ui(app_state: AppState, cam: &mut Camera, world: &HittableList) -> impl Widget<AppState> {
+    Flex::column()
+        .with_child(
+            Flex::row()
+                .with_child(
+                    // Viewport
+                    Container::new(
+                        druid::widget::Image::new(app_state.image_buf)
+                        .center(),
+                    )
+                        .fix_size(600., 700.)
+                        .padding(10.0)
+                        .border(Color::BLACK, 1.0)
+                        .center(),
+                )
+                .with_child(
+                    // Render Button
+                    Button::new("Render").on_click(|_, _, _| {
+                        
+                        // app_state.image_buf = ImageBuf::from_raw(img, format, width, height);
+                    }),
+                )
+                .cross_axis_alignment(CrossAxisAlignment::Center)
+                .main_axis_alignment(MainAxisAlignment::Center),
+        )
+        .padding(10.0)
+}
 
-        let mut d = rl.begin_drawing(&thread);
-        d.clear_background(raylib::prelude::Color::WHITE);
+pub fn display_image(cam: &mut Camera, world: &HittableList) {
 
-        // draw_circles(&frame, &mut d);
-    }
+    let img = render(cam, world);
+    
+    let time_start = Instant::now();
+
+    let initial_data = AppState {
+        image_buf: convert_im_to_druidim(img),
+    };
+
+    let time_end = Instant::now();
+
+    println!("Time start: {:?}", time_start);
+    println!("Time end: {:?}", time_end);
+    println!("Time elapsed: {:?}", time_end - time_start);
+    // initial_data.image_buf = convert_im_to_druidim(img);
+
+    let main_window = WindowDesc::new(build_ui(initial_data.clone(), cam, world))
+        .window_size((900.0, 800.0))
+        .title("Ray tracing in one weekend");
+
+
+    AppLauncher::with_window(main_window)
+        .launch(initial_data)
+        .expect("Failed to launch application");
 }

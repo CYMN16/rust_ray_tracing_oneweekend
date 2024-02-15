@@ -1,3 +1,6 @@
+use druid::Data;
+use im::Vector;
+
 use crate::hittable::*;
 use crate::interval::*;
 use crate::material::*;
@@ -6,8 +9,16 @@ use crate::vec3::*;
 use crate::Color;
 use std::sync::Arc;
 
+
+#[derive(Clone)]
 pub struct HittableList {
-    pub objects: Vec<Arc<dyn Hittable>>,
+    pub objects: Vector<Arc<dyn Hittable>>,
+}
+
+impl Data for HittableList{
+    fn same(&self, other: &Self) -> bool {
+        true
+    }
 }
 
 unsafe impl Sync for HittableList {}
@@ -41,7 +52,7 @@ impl Hittable for HittableList {
 }
 
 impl HittableList {
-    pub fn new(&self) {}
+    pub fn new() {}
 
     pub fn new_with_init(&self, object: Arc<dyn Hittable>) {}
 
@@ -50,6 +61,6 @@ impl HittableList {
     }
 
     pub fn add(&mut self, object: Arc<dyn Hittable>) {
-        self.objects.push(object);
+        self.objects.push_back(object);
     }
 }

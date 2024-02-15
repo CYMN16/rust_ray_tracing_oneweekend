@@ -1,3 +1,5 @@
+use druid::{piet, ImageBuf};
+
 use crate::{vec3::*, Interval};
 use std::{
     fmt::*,
@@ -33,6 +35,14 @@ impl Into<Arc<[u8]>> for Image {
             .collect();
         let bytes_arc: Arc<[u8]> = Arc::from(bytes);
         bytes_arc
+    }
+}
+
+impl Into<ImageBuf> for Image{
+    fn into(self) -> ImageBuf {
+        let width = self.width();
+        let height = self.height();
+        ImageBuf::from_raw(self, piet::ImageFormat::Rgb, width, height)
     }
 }
 

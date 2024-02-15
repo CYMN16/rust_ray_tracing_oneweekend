@@ -14,8 +14,9 @@ use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::Mutex;
+use druid::Data;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Data)]
 pub struct Camera {
     pub aspect_ratio: f64,
     pub image_width: usize,

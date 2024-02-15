@@ -17,6 +17,7 @@ use camera::*;
 use display::*;
 use hittable::*;
 use hittable_list::*;
+use im::vector;
 use image::*;
 use interval::*;
 use material::*;
@@ -39,15 +40,15 @@ fn main() -> std::io::Result<()> {
     // let img = simple_scene();
     let mut cam = Camera::default(); //= Camera::new(16./9., 400);
     cam.aspect_ratio = 16. / 9.;
-    cam.image_width = 400;
-    cam.samples_per_pixel = 100;
+    cam.image_width = 800;
+    cam.samples_per_pixel = 5;
     cam.max_depth = 50;
 
     cam.vfov = 20.;
     cam.lookfrom = Point3::new(-2., 2., 1.);
     cam.lookat = Point3::new(0., 0., -1.);
     cam.vup = Vec3::new(0., 1., 0.);
-    let mut world: HittableList = HittableList { objects: vec![] };
+    let mut world: HittableList = HittableList { objects: vector![] };
 
     // let r = (PI / 4.).cos();
 

@@ -1,9 +1,10 @@
+use druid::Data;
 use rand::{thread_rng, Rng};
 use std::{fmt::*, iter::Sum, ops::*};
 
 use crate::utility::*;
 
-#[derive(Clone)]
+#[derive(Clone, Data)]
 pub struct Vec3 {
     pub x: f64,
     pub y: f64,

@@ -7,7 +7,7 @@ current features:
 - implemented parallel computing with threads using rayon
 
 work in progress:
-- show the images in realtime using rust druid 
+- show the images in a GUI using rust druid 
 
 planned features:
 - compute using cuda for realtime rendering (couldn't get arrayfire to work, rust-cuda seemed too complicated)

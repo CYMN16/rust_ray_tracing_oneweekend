@@ -40,9 +40,9 @@ fn main() -> std::io::Result<()> {
     // let img = simple_scene();
     let mut cam = Camera::default(); //= Camera::new(16./9., 400);
     cam.aspect_ratio = 16. / 9.;
-    cam.image_width = 800;//800
+    cam.image_width = 200;//800
     cam.samples_per_pixel = 10;//20
-    cam.max_depth = 50;//50
+    cam.max_depth = 10;//50
 
     cam.vfov = 20.;
     cam.lookfrom = Point3::new(-2., 2., 1.);
